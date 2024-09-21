@@ -1,0 +1,17 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [],
+  "contributorsPerLine": 2.5,
+  "projectName": "robo-monitor-iot",
+  "projectOwner": "MatheusHenrique129",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsSortAlphabetically": true
+}
