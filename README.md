@@ -33,10 +33,10 @@ pip install -r requirements.txt
 
 3. **Running the project**:
 
-In the `src` folder, run the command:
+In the root path, run the command:
 
-```py
-python3 ...
+```bash
+fastapi dev main.py
 ```
 
 ## 📫 Contribute

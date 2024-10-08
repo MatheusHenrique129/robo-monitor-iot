@@ -1,8 +1,10 @@
+from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel
 
 class ClimateDataModel(BaseModel):
-    temperature: float
     humidity: float
+    temperature: float
     collection_time: datetime
-    network_disconnect: Optional[datetime]
     network_reconnect: Optional[datetime]
+    network_disconnect: Optional[datetime]

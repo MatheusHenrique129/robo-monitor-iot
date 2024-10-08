@@ -1,13 +1,8 @@
-from fastapi import FastAPI
+from routes.Router import app_router
+from fastapi import FastAPI, APIRouter
 
 app = FastAPI()
+router = APIRouter()
 
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+app.include_router(app_router)
+print("ROn Servidor", app)
