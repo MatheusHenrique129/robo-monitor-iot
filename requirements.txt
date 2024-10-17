@@ -1,2 +1,8 @@
+pandas
+machine
+dht
+network
+requests
+datetime
 fastapi
 pymongo[srv]

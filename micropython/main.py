@@ -1,107 +1,140 @@
 # Importando bibliotecas 
 import os # Para o leitura de aquivo CSV
-import machine # Para o hasp
 import time # Para o controle de tempo de leitura
-import dht # Para o sensor dht11
 import network # Para a conexão wi-fi
+import requests
+from dht import DHT11 # Para o sensor dht11
+from machine import Pin # Para o hasp
+from datetime import datetime
+
+BASE_URL_POST_SYNC = "http://127.0.0.1:8000/v1/save"
+BASE_URL_POST_CSV = "http://127.0.0.1:8000/v1/save_csv"
+headers = {'Content-Type': 'application/json'}
 
 # Login e senha do WI-FI
-login_wi_fi = 'RNS'
-senha_wi_fi = 'VaiFuncionar'
+wifi_login = 'RNS'
+wifi_password = 'VaiFuncionar'
+
+# Arquivo para salvar dados temporários
+file_name = 'data_logger.csv'
      
 # Conexão wifi --- tem que testar no rasp          
-def conecta_wifi():
+def connect_wifi():
     wlan = network.WLAN(network.STA_IF) # Declarando conexão
     wlan.active(True) # Ativando conexão
-    wlan.connect(login_wi_fi, senha_wi_fi) # Usando login e senha
+    wlan.connect(wifi_login, wifi_password) # Usando login e senha
     while not wlan.isconnected(): # Enquanto não conectar 
         time.sleep(1) # Espera um segundo  
     print('WiFi conectado:', wlan.ifconfig())
 
-# Definindo onde está o sensor  
-sensor = dht.DHT11(machine.Pin(4)) # Pino 4
+# Função para verificar a conexão Wi-Fi
+def is_connected():
+    wlan = network.WLAN(network.STA_IF)
+    return wlan.isconnected()
 
-# Arquivo para salvar dados temporários
-nome_arquivo = 'data_logger.csv'
+# Definindo onde está o sensor  
+sensor = DHT11(Pin(4))
 
 # Lendo informações de umidade e de temperatura
-def ler_umidade_temperatura():
+def read_humidity_temperature():
     sensor.measure() # realiza a leitura do sensor 
-    umidade = sensor.humidity() # Pega dados de umidade em porcentagem
-    temperatura = sensor.temperature() # Pega dados de temperatura em Celsius
-    return umidade,temperatura # Retorna umidade e temperatura
+    humidity = sensor.humidity() # Pega dados de umidade em porcentagem
+    temperature = sensor.temperature() # Pega dados de temperatura em Celsius
+    return humidity, temperature # Retorna umidade e temperatura
 
 # Função para criar o arquivo CSV e salvar os dados de umidade e temperatura
-def salvar_dados_umidade_temperatura():
+def save_humidity_temperature_data():
     try:
-        if not arquivo_existe(nome_arquivo): # Se o arquivo não existe
-            # Cria o arquivo e adiciona cabeçalhos
-            with open(nome_arquivo, 'w') as arquivo:
-                arquivo.write('umidade,temperatura,status,data,hora\n')
+        if not file_exists(file_name): # Se o arquivo não existe
+            with open(file_name, 'w') as file:
+                file.write('umidade,temperatura,status,data,hora\n')
         
-        with open(nome_arquivo, 'a') as arquivo:
+        with open(file_name, 'a') as file:
             # Capturar a data e a hora atual (data da Leitura)
-            data_hora = time.localtime()
-            data_leitura = '{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}'.format(data_hora[0], data_hora[1], data_hora[2],data_hora[3], data_hora[4], data_hora[5])
+            date_time = time.localtime()
+            reading_date = '{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}'.format(date_time[0], date_time[1], date_time[2],date_time[3], date_time[4], date_time[5])
             
-            umidade_temperatura = int(ler_umidade_temperatura()) # Le o valor da umidade e da temperatura
+            humidity_temperature = int(read_humidity_temperature()) # Le o valor da umidade e da temperatura
             #status = pegar_status(umidade_temperatura)
 
             # Salvar os dados no arquivo CSV
-            arquivo.write('{},{},{}\n'.format(umidade_temperatura[0],umidade_temperatura[1], data_leitura))
+            file.write('{},{},{}\n'.format(humidity_temperature[0], humidity_temperature[1], reading_date))
             
             # Printando para vizualizar
-            print(f'Dados salvos:\n Umidade: {umidade_temperatura[0]}\n Temperatura: {umidade_temperatura[1]}\n Data da Leitura {data_leitura}')
-            
-    # Em caso de erro mostra mensagem        
+            print(f'Dados salvos:\n Umidade: {humidity_temperature[0]}\n Temperatura: {humidity_temperature[1]}\n Data da Leitura {reading_date}')         
     except OSError as e:
         print("Erro ao ler o sensor: ", e)
         #status = "ERRO"
 
 # Função para verificar se o arquivo CSV já existe
-def arquivo_existe(nome_arquivo):
-    return nome_arquivo in os.listdir()
+def file_exists(file_name):
+    return file_name in os.listdir()
 
 # Função para ler os dados do arquivo CSV
-def ler_dados_csv():
+def read_csv_data():
     # Se o arquivo existe
-    if arquivo_existe(nome_arquivo):
+    if file_exists(file_name):
         # Printa todos os registros
-        with open(nome_arquivo, 'r') as arquivo:
-            print(arquivo.read())    
+        with open(file_name, 'r') as file:
+            print(file.read())    
     else: # Caso não exista
         # Mostra mensagem
         print("Arquivo não encontrado.")
 
 # Função para eliminar o arquivo CSV
-def eliminar_arquivo_csv():
+def delete_csv_file():
     # Se encontrar arquivo
-    if arquivo_existe(nome_arquivo):
+    if file_exists(file_name):
         # Apaga o arquivo
-        os.remove(nome_arquivo)
-        print(f"Arquivo {nome_arquivo} eliminado.")  
+        os.remove(file_name)
+        print(f"Arquivo {file_name} eliminado.")  
     else: # Se não encontrar arquivo mostra mensagem   
         print("Arquivo não encontrado para eliminação.")   
-'''
-# Verificar com professor como funciona com as duas entradas, umidade e temperatura
-def pegar_status(umidade_temperatura_percentual):
-    
-    status = None 
-    if umidade_temperatura_percentual >= 0 and umidade_temperatura_percentual <= 30:
-        status = 'seco'
-    
-    elif umidade_temperatura_percentual >= 30 and umidade_temperatura_percentual <= 70:
-        status = 'moderado'
+
+def send_data_sync():
+    try:        
+        collection_time_str = datetime.now().isoformat()
+        humidity, temperature = read_humidity_temperature()
+        data = {
+                "humidity": humidity,
+                "temperature": temperature,
+                "collection_time": collection_time_str,  
+                "network_reconnect": None,  
+                "network_disconnect": None
+               }
+           
+        print(data)  
+        response = requests.post(BASE_URL_POST_SYNC, json=data, headers=headers)
         
-    elif umidade_temperatura_percentual > 70 and umidade_temperatura_percentual <= 100:
-        status = 'úmido'
-        
-    return status
-'''
+        if response.status_code == 200:
+            print('Dados enviados com sucesso!')
+        else:
+            print('Erro ao enviar dados:', response.status_code)
+        response.close()
+    except Exception as e:
+        print('Erro ao enviar dados:', e)
+
+# Função para enviar dados do CSV quando a conexão for restabelecida
+def send_csv_data():
+    if file_exists(file_name):
+        with open(file_name, 'r') as file:
+            data = file.read()
+        response = requests.post(BASE_URL_POST_CSV, data=data, headers=headers)
+        if response.status_code == 200:
+            print('Dados do CSV enviados com sucesso!')
+            delete_csv_file() # Remove o arquivo após o envio
+        else:
+            print('Erro ao enviar dados do CSV:', response.status_code)
+
 # Iniciando programa
 while True:
-    salvar_dados_umidade_temperatura() # Salvando dados do sensor
-    time.sleep(10)  # Esperar 10 segundos para nova leitura
-    # Fazendo leitura
+    humidity_temperature = read_humidity_temperature()  # Lê os dados do sensor
+    if is_connected():  # Verifica se está conectado ao Wi-Fi
+        send_data_sync()  # Envia os dados imediatamente
+    else:
+        save_humidity_temperature_data()  # Salvando dados do sensor
+        time.sleep(10)  # Esperar 10 segundos para nova leitura
+        send_csv_data()  # Tenta enviar dados do CSV se a conexão for restabelecida
+
     print(' ')
-    ler_dados_csv()
+    read_csv_data()

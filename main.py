@@ -5,4 +5,3 @@ app = FastAPI()
 router = APIRouter()
 
 app.include_router(app_router)
-print("ROn Servidor", app)

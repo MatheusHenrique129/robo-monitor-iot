@@ -1,5 +1,4 @@
-from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
 from src.services.ClimateService import ClimateService
 from src.models.ClimateDataModel import ClimateDataModel
 
@@ -18,3 +17,6 @@ async def find_status():
 async def save(climateData: ClimateDataModel):
   return await ClimateService.save(climateData)
 
+@app_router.post('/save_csv', status_code=200)
+async def save_csv(file: UploadFile = File(...)):
+  return await ClimateService.save_csv(file)
