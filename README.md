@@ -13,7 +13,7 @@ If you want to know more about the specifications of this project, read the job 
 
 <!--- # "Verify icons availability here https://github.com/tandpfun/skill-icons" -->
 
-[![My Skills](https://skillicons.dev/icons?i=python,mongodb)](https://skillicons.dev)
+[![My Skills](https://skillicons.dev/icons?i=python,fastapi,mongodb)](https://skillicons.dev)
 
 ## Getting Started
 
@@ -58,6 +58,10 @@ git clone https://github.com/MatheusHenrique129/robo-monitor-iot.git
 3. Follow [commit patterns](https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716).
 
 4. Open a [Pull Request](https://www.atlassian.com/br/git/tutorials/making-a-pull-request) explaining the problem solved or feature made, if exists, append screenshot of visual modifications and wait for the review!
+
+5. Helps:
+
+- [Micropython](https://github.com/Josverl/micropython-stubber)
 
 ## Contributors ✨
 

@@ -1,6 +1,5 @@
 pandas
-machine
-dht
+micropython-machine
 network
 requests
 datetime

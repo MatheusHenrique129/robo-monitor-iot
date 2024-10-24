@@ -3,8 +3,8 @@ import os # Para o leitura de aquivo CSV
 import time # Para o controle de tempo de leitura
 import network # Para a conexão wi-fi
 import requests
-from dht import DHT11 # Para o sensor dht11
-from machine import Pin # Para o hasp
+import Adafruit_DHT  # Para o sensor dht11
+import machine # Para o hasp
 from datetime import datetime
 
 BASE_URL_POST_SYNC = "http://127.0.0.1:8000/v1/save"
@@ -33,7 +33,7 @@ def is_connected():
     return wlan.isconnected()
 
 # Definindo onde está o sensor  
-sensor = DHT11(Pin(4))
+sensor = Adafruit_DHT.DHT11(machine.Pin(4))
 
 # Lendo informações de umidade e de temperatura
 def read_humidity_temperature():
