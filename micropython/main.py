@@ -2,18 +2,17 @@
 import os # Para o leitura de aquivo CSV
 import time # Para o controle de tempo de leitura
 import network # Para a conexão wi-fi
-import requests
-import Adafruit_DHT  # Para o sensor dht11
+import urequests as requests
+import dht #Para o sensor dht11
 import machine # Para o hasp
-from datetime import datetime
 
 BASE_URL_POST_SYNC = "http://127.0.0.1:8000/v1/save"
 BASE_URL_POST_CSV = "http://127.0.0.1:8000/v1/save_csv"
 headers = {'Content-Type': 'application/json'}
 
 # Login e senha do WI-FI
-wifi_login = 'RNS'
-wifi_password = 'VaiFuncionar'
+wifi_login = 'Matheus'
+wifi_password = 'citroenvasion'
 
 # Arquivo para salvar dados temporários
 file_name = 'data_logger.csv'
@@ -24,6 +23,7 @@ def connect_wifi():
     wlan.active(True) # Ativando conexão
     wlan.connect(wifi_login, wifi_password) # Usando login e senha
     while not wlan.isconnected(): # Enquanto não conectar 
+        print("Conectando...")
         time.sleep(1) # Espera um segundo  
     print('WiFi conectado:', wlan.ifconfig())
 
@@ -33,14 +33,22 @@ def is_connected():
     return wlan.isconnected()
 
 # Definindo onde está o sensor  
-sensor = Adafruit_DHT.DHT11(machine.Pin(4))
+sensor = dht.DHT11(machine.Pin(26))
+print(sensor)
 
 # Lendo informações de umidade e de temperatura
 def read_humidity_temperature():
-    sensor.measure() # realiza a leitura do sensor 
-    humidity = sensor.humidity() # Pega dados de umidade em porcentagem
-    temperature = sensor.temperature() # Pega dados de temperatura em Celsius
-    return humidity, temperature # Retorna umidade e temperatura
+    try:
+        sensor.measure() # realiza a leitura do sensor 
+        time.sleep(0.5)
+        humidity = sensor.humidity() # Pega dados de umidade em porcentagem
+        temperature = sensor.temperature() # Pega dados de temperatura em Celsius
+        print(humidity, temperature)
+        return humidity, temperature # Retorna umidade e temperatura
+    except OSError as e:
+        print("Erro ao ler o sensor:", e)
+        time.sleep(1)  # Espera um segundo antes de tentar novamente
+        return None, None  # Retorna valores nulos em caso de erro
 
 # Função para criar o arquivo CSV e salvar os dados de umidade e temperatura
 def save_humidity_temperature_data():
@@ -54,16 +62,19 @@ def save_humidity_temperature_data():
             date_time = time.localtime()
             reading_date = '{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}'.format(date_time[0], date_time[1], date_time[2],date_time[3], date_time[4], date_time[5])
             
-            humidity_temperature = int(read_humidity_temperature()) # Le o valor da umidade e da temperatura
+            humidity_temperature = read_humidity_temperature() # Le o valor da umidade e da temperatura
             #status = pegar_status(umidade_temperatura)
-
-            # Salvar os dados no arquivo CSV
-            file.write('{},{},{}\n'.format(humidity_temperature[0], humidity_temperature[1], reading_date))
-            
-            # Printando para vizualizar
-            print(f'Dados salvos:\n Umidade: {humidity_temperature[0]}\n Temperatura: {humidity_temperature[1]}\n Data da Leitura {reading_date}')         
+          # Verifica se a leitura foi bem-sucedida
+            if humidity_temperature[0] is not None and humidity_temperature[1] is not None:
+                # Salvar os dados no arquivo CSV
+                file.write('{},{},{}\n'.format(humidity_temperature[0], humidity_temperature[1], reading_date))
+                
+                # Printando para visualizar
+                print(f'Dados salvos:\n Umidade: {humidity_temperature[0]}\n Temperatura: {humidity_temperature[1]}\n Data da Leitura {reading_date}')         
+            else:
+                print("Leitura do sensor falhou, dados não salvos.")
     except OSError as e:
-        print("Erro ao ler o sensor: ", e)
+        print("Erro ao salvar os dados no CSV: ", e)
         #status = "ERRO"
 
 # Função para verificar se o arquivo CSV já existe
@@ -93,12 +104,11 @@ def delete_csv_file():
 
 def send_data_sync():
     try:        
-        collection_time_str = datetime.now().isoformat()
         humidity, temperature = read_humidity_temperature()
         data = {
                 "humidity": humidity,
                 "temperature": temperature,
-                "collection_time": collection_time_str,  
+                "collection_time": "",  
                 "network_reconnect": None,  
                 "network_disconnect": None
                }
@@ -119,7 +129,7 @@ def send_csv_data():
     if file_exists(file_name):
         with open(file_name, 'r') as file:
             data = file.read()
-        response = requests.post(BASE_URL_POST_CSV, data=data, headers=headers)
+        response = requests.post(BASE_URL_POST_CSV, headers=headers, data=data, timeout=10)
         if response.status_code == 200:
             print('Dados do CSV enviados com sucesso!')
             delete_csv_file() # Remove o arquivo após o envio
@@ -127,6 +137,7 @@ def send_csv_data():
             print('Erro ao enviar dados do CSV:', response.status_code)
 
 # Iniciando programa
+connect_wifi()
 while True:
     humidity_temperature = read_humidity_temperature()  # Lê os dados do sensor
     if is_connected():  # Verifica se está conectado ao Wi-Fi
