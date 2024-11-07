@@ -11,8 +11,8 @@ BASE_URL_POST_CSV = "http://127.0.0.1:8000/v1/save_csv"
 headers = {'Content-Type': 'application/json'}
 
 # Login e senha do WI-FI
-wifi_login = 'Matheus'
-wifi_password = 'citroenvasion'
+wifi_login = 'RNS'
+wifi_password = 'VaiFuncionar'
 
 # Arquivo para salvar dados temporários
 file_name = 'data_logger.csv'
